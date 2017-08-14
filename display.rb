@@ -35,7 +35,7 @@ class Display
   def menu_details
     heading(x: 8, y: 20)
     z = 0
-    put_str(str: "#{z += 1}.  Email Details", y: 31, clr: COLOR_GREEN)
+    put_str(str: "#{z += 1}.  Email Details", y: 28, clr: COLOR_GREEN)
     put_str(str: "#{z += 1}.  Shopping Cycle")
     put_str(str: "#{z += 1}.  Stock Adjustment")
     put_str(str: "#{z += 1}.  Scan Mode")

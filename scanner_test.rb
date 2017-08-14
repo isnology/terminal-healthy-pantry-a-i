@@ -1,60 +1,46 @@
-#require 'rubyserial'
-
-#serialport = Serial.new '/dev/tty.GlennGS7e-BlueScanner'
-#serialport = Serial.new '/dev/tty.GlennGS7e-BlueScanner', 9600, 8, :even
-
-#system("clear")
-
-#while true
-#   str = serialport.read(13)
-#   puts str
-# end
 
 require 'rubygems'
 require 'websocket-client-simple'
 require 'mail'
 require 'curses'
+require 'espeak'
 
 include Curses
+include ESpeak
 
+# password = ENV['EMAIL_PASSWORD']
 
-Curses.start_color
-# Determines the colors in the attron() in put_str()
-Curses.init_pair(COLOR_GREEN,COLOR_GREEN,COLOR_BLACK)
-
-password = ENV['EMAIL_PASSWORD']
-
-options = { :address              => "smtp.gmail.com",
-            :port                 => 587,
-            :domain               => 'localhost',
-            :user_name            => 'grmarks@gmail.com',
-            :password             => password,
-            :authentication       => 'plain',
-            :enable_starttls_auto => true  }
+# options = { :address              => "smtp.gmail.com",
+#             :port                 => 587,
+#             :domain               => 'localhost',
+#             :user_name            => 'grmarks@gmail.com',
+#             :password             => password,
+#             :authentication       => 'plain',
+#             :enable_starttls_auto => true  }
 
 
 
-Mail.defaults do
-  delivery_method :smtp, options
-end
+# Mail.defaults do
+#   delivery_method :smtp, options
+# end
 
-ws = WebSocket::Client::Simple.connect 'ws://10.1.7.142:9999/'
+#ws = WebSocket::Client::Simple.connect 'ws://10.1.7.142:9999/'
 
-ws.on :message do |msg|
-  puts msg.data
+# ws.on :message do |msg|
+#   puts msg.data
 
-  Mail.deliver do
-    to       'grmarks@gmail.com,'
-    from     'grmarks@gmail.com'
-    subject  'Test Email from G&S Dietry Pantry A.I.'
-    body     "This is the barcode: #{msg.data}"
-  end
+#   Mail.deliver do
+#     to       'grmarks@gmail.com,'
+#     from     'grmarks@gmail.com'
+#     subject  'Test Email from G&S Dietry Pantry A.I.'
+#     body     "This is the barcode: #{msg.data}"
+#   end
   
-end
+# end
 
-ws.on :open do
-  ws.send 'connected!'
-end
+# ws.on :open do
+#   ws.send 'connected!'
+# end
 
 # ws.on :close do |e|
 #   p e
@@ -64,6 +50,22 @@ end
 # ws.on :error do |e|
 #   p e
 # end
+
+
+
+
+
+#puts "What is your name"
+#answer = gets
+
+speech = Speech.new('G & S Dietry Pantry A I', voice: 'en', pitch: 90, speed: 200)
+speech.speak # invokes espeak
+
+exit 1
+
+Curses.start_color
+# Determines the colors in the attron() in put_str()
+Curses.init_pair(COLOR_GREEN,COLOR_GREEN,COLOR_BLACK)
 
 Curses.init_screen
 Curses.clear
