@@ -33,9 +33,9 @@ class Display
   end  
 
   def menu_details
-    heading(x: 8, y: 31)
+    heading(x: 8, y: 20)
     z = 0
-    put_str(clr: COLOR_GREEN, str: "#{z += 1}.  Email Details")
+    put_str(str: "#{z += 1}.  Email Details", y: 31, clr: COLOR_GREEN)
     put_str(str: "#{z += 1}.  Shopping Cycle")
     put_str(str: "#{z += 1}.  Stock Adjustment")
     put_str(str: "#{z += 1}.  Scan Mode")
@@ -48,7 +48,7 @@ class Display
   end 
   
   def email_details
-    heading(x: 8, y: 31)
+    heading(x: 8, y: 20)
     set_pos
     put_str(str: 'Please Enter your email: ', clr: COLOR_GREEN)
     Curses.refresh
@@ -57,7 +57,7 @@ class Display
 
   def shopping_cycle_details
     hash = {}
-    heading(x: 8, y: 31)
+    heading(x: 8, y: 20)
     set_pos
     put_str(str: 'Enter your shopping cycle in days: ', clr: COLOR_GREEN)
     Curses.refresh
@@ -106,29 +106,29 @@ class Display
     Curses.init_pair(COLOR_CYAN,COLOR_CYAN,COLOR_CYAN)
     Curses.clear
     Curses.curs_set(0)
-    large_char(char: 'G', x: 4, y: 5, clr: COLOR_CYAN)
-    large_char(char: 'as')
-    large_char(char: 'S')
-    large_char(char: 'sp')
-    large_char(char: 'D')
-    large_char(char: 'I')
-    large_char(char: 'E')
-    large_char(char: 'T')
-    large_char(char: 'R')
-    large_char(char: 'Y')
-    large_char(char: 'P', x: 13, y: 4)
-    large_char(char: 'A')
-    large_char(char: 'N')
-    large_char(char: 'T')
-    large_char(char: 'R')
-    large_char(char: 'Y')
-    large_char(char: 'sp')
-    large_char(char: 'A')
-    large_char(char: 'dt')
-    large_char(char: 'I')
-    large_char(char: 'dt')
+
+    y = 4
+    ['P', 'A', 'N', 'T', 'R', 'Y', 'sp', 'A', 'dt', 'I', 'dt'].each do |char|
+      (-3..14).each do |x|
+        large_char(char: char, x: x, y: y, clr: COLOR_CYAN)
+        Curses.refresh
+        sleep(0.02)
+      end  
+      y += 7
+    end
+    
+    y = 5
+    ['G', 'as', 'S', 'sp', 'D', 'I', 'E', 'T', 'R', 'Y'].each do |char|
+      (-3..5).each do |x|
+        large_char(char: char, x: x, y: y, clr: COLOR_CYAN)
+        Curses.refresh
+        sleep(0.05)
+      end 
+      y += 7  
+    end
+    
     Curses.refresh
-    sleep(7)
+    sleep(5)
     # set cycn to text colour (black background)
     Curses.init_pair(COLOR_CYAN,COLOR_CYAN,COLOR_BLACK)
     Curses.curs_set(1)
@@ -137,40 +137,45 @@ class Display
   def heading(x:, y:)
     Curses.clear
     Curses.echo
-    put_str(x: x, y: y, clr: COLOR_CYAN, str: 'G&S Dietry Pantry A.I.')
-    put_str(clr: COLOR_RED,              str: '======================')
+    put_str(x: x, y: y, clr: COLOR_CYAN, str: 'G & S   D i e t r y   P a n t r y   A. I.')
+    put_str(clr: COLOR_RED,              str: '=========================================')
+    set_pos
   end  
 
-  def put_str(x: -1, y: -1, clr: nil, str:)
+  # put a string to the screen (with colour) using Curses (remember colour)
+  def put_str(x: -10, y: -10, clr: nil, str:)
     @color = clr if clr
     set_pos(x: x, y: y)
-    Curses.attron(color_pair(@color)|A_NORMAL) { Curses.addstr(str) }
+    Curses.attron(color_pair(@color)|A_NORMAL) { Curses.addstr(str) } 
   end  
 
   # normal text strings auto advences down the screen unless X, Y coordinated passed
-  def set_pos(x: -1, y: -1)
-    x > -1 ? @x = x : @x += 1
-    @y = y if y > -1
+  def set_pos(x: -10, y: -10)
+    x > -10 ? @x = x : @x += 1
+    @y = y if y > -10
     Curses.setpos(@x, @y)
   end  
 
   # large font charaters auto advance accross the screen unless X, Y coordinates passed
-  # puts 1 charater per call
-  def large_char(char:, x: -1, y: -1, clr: nil)
-    y = @y if y == -1
-    x = @x if x == -1
-    save_y = y
+  # puts 1 character per call
+  def large_char(char:, x: -10, y: -10, clr: nil)
+    y = @y if y == -10
+    x = @x if x == -10
     save_x = x
+    save_y = y
     set_pos(x: x, y: y) 
     @fcolor = clr if clr 
     
-    @font[char.to_sym].each do |bitmap|
-      bitmap.each do |str|
-        str == '1' ? put_str(x: x, y: y, clr: @fcolor, str: ' ') : put_str(x: x, y: y, clr: COLOR_BLACK, str: ' ')
-        y += 1        
-      end  
-      x += 1
-      y = save_y
+    if x > -1
+      put_str(x: x-1, y: y, clr: COLOR_BLACK, str: '     ')
+      @font[char.to_sym].each do |bitmap|
+        bitmap.each do |str|
+          str == '1' ? put_str(x: x, y: y, clr: @fcolor, str: ' ') : put_str(x: x, y: y, clr: COLOR_BLACK, str: ' ')
+          y += 1        
+        end  
+        x += 1
+        y = save_y
+      end
     end
     @y = y + 7 
     @x = save_x
