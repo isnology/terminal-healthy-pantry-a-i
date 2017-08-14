@@ -56,11 +56,12 @@ class Pantry
       p e
     end
 
-    options = { :address              => "smtp.gmail.com",
+    options = { 
+            :address              => "smtp.gmail.com",
             :port                 => 587,
             :domain               => 'localhost',
             :user_name            => 'grmarks',
-            :password             => '',
+            :password             => ENV['EMAIL_PASSWORD'],
             :authentication       => 'plain',
             :enable_starttls_auto => true  }
 

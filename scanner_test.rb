@@ -22,11 +22,13 @@ Curses.start_color
 # Determines the colors in the attron() in put_str()
 Curses.init_pair(COLOR_GREEN,COLOR_GREEN,COLOR_BLACK)
 
+password = ENV['EMAIL_PASSWORD']
+
 options = { :address              => "smtp.gmail.com",
             :port                 => 587,
             :domain               => 'localhost',
             :user_name            => 'grmarks@gmail.com',
-            :password             => ENV[EMAILPASSWORD],
+            :password             => password,
             :authentication       => 'plain',
             :enable_starttls_auto => true  }
 
@@ -41,12 +43,12 @@ ws = WebSocket::Client::Simple.connect 'ws://10.1.7.142:9999/'
 ws.on :message do |msg|
   puts msg.data
 
-  # Mail.deliver do
-  #   to       'grmarks@gmail.com,'
-  #   from     'gspantrymanagment@gmail.com'
-  #   subject  'Test Email from G&S Dietry Pantry A.I.'
-  #   body     "This is the barcode: #{msg.data}"
-  # end
+  Mail.deliver do
+    to       'grmarks@gmail.com,'
+    from     'grmarks@gmail.com'
+    subject  'Test Email from G&S Dietry Pantry A.I.'
+    body     "This is the barcode: #{msg.data}"
+  end
   
 end
 
