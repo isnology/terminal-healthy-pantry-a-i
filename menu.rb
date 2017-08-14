@@ -61,8 +61,7 @@ class Menu
     @scanner = Scanner.new(ip: '10.1.7.142', object: self, mode: mode)
 
     loop do
-      #str = STDIN.gets.strip
-      str = gets.strip
+      str = STDIN.gets.strip
       break if str.to_i == 90
     end
 
@@ -72,20 +71,31 @@ class Menu
   end  
 
   def scanned_in(barcode:)
-    puts 'in'
-    inventory = @pantry.inventories[barcode]
-    inventory.quantity += 1
-    puts inventory
+    n_barcode = barcode.to_i
+    if @pantry.inventories.key?(n_barcode)
+      inventory = @pantry.inventories[n_barcode]
+      inventory.quantity += 1
 
-    item = @pantry.master_items[inventory.item_id]
-    puts item
-    puts "#{barcode} item: #{item.name} qty: #{inventory.quantity}"
+      item = @pantry.master_items[inventory.item_id]
+      puts "#{barcode} item: #{item.name} qty: #{inventory.quantity}"  
+    else  
+      # create inventory record
+      @pantry.master_items.each do |key, item|
+        if item.barcode == n_barcode
+          inventory = Inventory.new(item_id: item.id, quantity: 1, minimum_stock: 1, reorder_qty: 2, consumption: 1)
+          @pantry.add_inventory(barcode: n_barcode, inventory: inventory)
+          puts "add #{barcode} item: #{item.name} qty: #{inventory.quantity} to inventory"  
+          break
+        end
+      end  
+    end  
+    
   end
 
   def scanned_out(barcode:)
-    puts 'out'
-    inventory = @pantry.inventories[barcode]
+    inventory = @pantry.inventories[barcode.to_i]
     inventory.quantity -= inventory.consumption
+    inventory.quantity = 0 if inventory.quantity < 0
 
     item = @pantry.master_items[inventory.item_id]
     puts "#{barcode} item: #{item.name} qty: #{inventory.quantity}"

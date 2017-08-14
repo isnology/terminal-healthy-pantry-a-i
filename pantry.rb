@@ -5,7 +5,6 @@ require_relative 'supplier'
 require_relative 'menu'
 require_relative 'display'
 require_relative 'scanner'
-#require 'rubyserial'
 require 'date'
 require 'rubygems'
 require 'websocket-client-simple'
@@ -13,7 +12,7 @@ require 'mail'
 require 'yaml'
 require 'curses'
 #require 'espeak'
-#require 'irb'
+require 'irb'
 
 include Curses
 #include ESpeak
@@ -93,21 +92,22 @@ class Pantry
   end  
 
   def shopping_list
-    email_body =  ' Coles Shopping List\n'
-    email_body << ' ===================\n'
+    email_body =  " Coles Shopping List\r\n"
+    email_body << " ===================\r\n\r\n"
     @inventories.each do |key, inventory|
       if inventory.quantity <= inventory.minimum_stock
         item = @master_items[inventory.item_id]
-        email_body << " #{inventory.reorder_qty} of #{item.name}/s made by #{item.brand}\n"
+        email_body << " #{inventory.reorder_qty} of #{item.name}/s made by #{item.brand}\r\n"
       end  
     end  
 
     if email_body.length > 43
-      email_body << "\n End Of List\n"
+      email_body << "\r\n End Of List\r\n"
 
       # email list
+      email = @email
       Mail.deliver do
-      to       "#{@email},"
+      to       "#{email},"
       from     'grmarks@gmail.com'
       subject  'Shopping List from G&S Dietry Pantry A.I.'
       body     email_body
@@ -119,14 +119,14 @@ class Pantry
   def load_system
     if File.exists?(FILE_NAME)
       save = YAML.load(File.read(FILE_NAME))
-      @inventories = save[:inv] if save[:inv]
-      @suppliers = save[:sup] if save[:sup]
-      Supplier.next = save[:sup_id] if save[:sup_id]
-      @master_items = save[:item] if save[:item]
-      Item.next = save[:item_id] if save[:item_id]
-      @cycle = save[:cycle] if save[:cycle]
-      @date = save[:date] if save[:date]
-      @email = save[:email] if save[:email]
+      @inventories = save[:inv] if save.key?(:inv)
+      @suppliers = save[:sup] if save.key?(:sup)
+      Supplier.next = save[:sup_id] if save.key?(:sup_id)
+      @master_items = save[:item] if save.key?(:item)
+      Item.next = save[:item_id] if save.key?(:item_id)
+      @cycle = save[:cycle] if save.key?(:cycle)
+      @date = save[:date] if save.key?(:date)
+      @email = save[:email] if save.key?(:email)
     end  
   end
   
@@ -181,7 +181,6 @@ class Pantry
 
     add_master_item(item: item)
     supplier.add_item(item_id: item.id, price: 7.50)
-    supplier2.add_item(item_id: item.id, price: 8.50)
     inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 2, reorder_qty: 4, consumption: 1)
     add_inventory(barcode: item.barcode, inventory: inventory)
 
@@ -197,6 +196,7 @@ class Pantry
 
     add_master_item(item: item)
     supplier.add_item(item_id: item.id, price: 5.40)
+    supplier2.add_item(item_id: item.id, price: 8.50)
     inventory = Inventory.new(item_id: item.id, quantity: 2, minimum_stock: 1, reorder_qty: 1, consumption: 1)
     add_inventory(barcode: item.barcode, inventory: inventory)
 
@@ -241,7 +241,7 @@ class Pantry
     contents << Content.new(name: 'Sugar', quantity: 0.1)
 
     item = Item.new(
-      barcode: 8076809545396, 
+      barcode: 4001724819103, 
       name: 'Pizza Funghi', 
       quantity: 3, 
       brand: 'Ristorante', 
@@ -252,8 +252,8 @@ class Pantry
 
     add_master_item(item: item)
     supplier.add_item(item_id: item.id, price: 7.20)
-    inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 1, reorder_qty: 2, consumption: 1)
-    add_inventory(barcode: item.barcode, inventory: inventory)
+    #inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 1, reorder_qty: 2, consumption: 1)
+    #add_inventory(barcode: item.barcode, inventory: inventory)
   end
 
 end

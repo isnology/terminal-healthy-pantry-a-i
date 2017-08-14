@@ -19,8 +19,14 @@
     reorder_qty: 1
     consumption: 1.0
   8076809545396: !ruby/object:Inventory
+    item_id: 4
+    quantity: 1.0
+    minimum_stock: 1.0
+    reorder_qty: 2
+    consumption: 1.0
+  4001724819103: !ruby/object:Inventory
     item_id: 5
-    quantity: 4.0
+    quantity: 0.0
     minimum_stock: 1.0
     reorder_qty: 2
     consumption: 1.0
@@ -39,7 +45,7 @@
     id: 2
     name: Woolworths
     items:
-      1: 8.5
+      2: 8.5
     location: Dandenong North
 :sup_id: 2
 :item:
@@ -96,9 +102,9 @@
       quantity: 0.05
   5: !ruby/object:Item
     id: 5
-    barcode: 8076809545396
+    barcode: 4001724819103
     name: Pizza Funghi
-    quantity: 365.0
+    quantity: 3.0
     brand: Ristorante
     rating: 6
     expiry_date: 2018-07-01
@@ -112,4 +118,4 @@
 :item_id: 5
 :cycle: '7'
 :date: 2017-08-18
-:email: grmarks@gmail.com
+:email: soo.shaun@gmail.com
