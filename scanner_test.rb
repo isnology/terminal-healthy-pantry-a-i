@@ -26,7 +26,7 @@ options = { :address              => "smtp.gmail.com",
             :port                 => 587,
             :domain               => 'localhost',
             :user_name            => 'grmarks@gmail.com',
-            :password             => 'samba001',
+            :password             => ENV[EMAILPASSWORD],
             :authentication       => 'plain',
             :enable_starttls_auto => true  }
 
@@ -36,7 +36,7 @@ Mail.defaults do
   delivery_method :smtp, options
 end
 
-ws = WebSocket::Client::Simple.connect 'ws://192.168.1.6:9999/'
+ws = WebSocket::Client::Simple.connect 'ws://10.1.7.142:9999/'
 
 ws.on :message do |msg|
   puts msg.data

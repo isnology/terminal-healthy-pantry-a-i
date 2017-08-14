@@ -4,6 +4,6 @@ class SupItem
 
   def initialize(item_id:, price:)
     @item_id = item_id
-    @price = price
+    @price = price.to_f
   end
 end  

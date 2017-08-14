@@ -16,8 +16,15 @@ class Supplier
     @id = Supplier.next_id
     @name = name
     @item = {} 
-    @item.store(sup_item) if sup_item
+    @item.store(sup_item.id, sup_item) if sup_item
     @location = location 
   end 
 
+  def add_sup_item(sup_item: sup_item)
+    @item.store(sup_item.id, sup_item)
+  end  
+
+  def remove_item(sup_item: sup_item)
+    @item.delete(sup_item.id)
+  end  
 end
