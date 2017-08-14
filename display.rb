@@ -83,7 +83,7 @@ class Display
   def auto_scan_mode_details
     system("clear")
     puts
-    puts "Scanning mode"
+    puts "Scanning out mode"
     puts
     puts "Enter '90' to return to menu"
   end  

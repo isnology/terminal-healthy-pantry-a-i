@@ -1,10 +1,115 @@
 ---
-:inv: []
-:inv_id: 0
-:sup: []
-:sup_id: 0
-:item: []
-:item_id: 0
-:cycle: 7
-:date: 2017-08-13
-:email: glenn@gmail.com
+:inv:
+  9112345678901: !ruby/object:Inventory
+    item_id: 1
+    quantity: 4.0
+    minimum_stock: 2.0
+    reorder_qty: 4
+    consumption: 1.0
+  9112345678992: !ruby/object:Inventory
+    item_id: 2
+    quantity: 2.0
+    minimum_stock: 1.0
+    reorder_qty: 1
+    consumption: 1.0
+  9112345678883: !ruby/object:Inventory
+    item_id: 3
+    quantity: 2.0
+    minimum_stock: 1.0
+    reorder_qty: 1
+    consumption: 1.0
+  8076809545396: !ruby/object:Inventory
+    item_id: 5
+    quantity: 4.0
+    minimum_stock: 1.0
+    reorder_qty: 2
+    consumption: 1.0
+:sup:
+  1: !ruby/object:Supplier
+    id: 1
+    name: Coles
+    items:
+      1: 7.5
+      2: 5.4
+      3: 6.3
+      4: 3.5
+      5: 7.2
+    location: Dandenong North
+  2: !ruby/object:Supplier
+    id: 2
+    name: Woolworths
+    items:
+      1: 8.5
+    location: Dandenong North
+:sup_id: 2
+:item:
+  1: !ruby/object:Item
+    id: 1
+    barcode: 9112345678901
+    name: Cambels Soup
+    quantity: 500.0
+    brand: Cambels
+    rating: 7
+    expiry_date: 2018-05-01
+    content_list: &1
+    - !ruby/object:Content
+      name: Sodium
+      quantity: 0.1
+    - !ruby/object:Content
+      name: Sugar
+      quantity: 0.1
+    - !ruby/object:Content
+      name: Gluten
+      quantity: 0.1
+  2: !ruby/object:Item
+    id: 2
+    barcode: 9112345678992
+    name: Rice
+    quantity: 1000.0
+    brand: Sunlong
+    rating: 8
+    expiry_date: 2018-01-01
+    content_list: *1
+  3: !ruby/object:Item
+    id: 3
+    barcode: 9112345678883
+    name: Wholemeal Flour
+    quantity: 1000.0
+    brand: Sunlong
+    rating: 8
+    expiry_date: 2018-11-01
+    content_list: *1
+  4: !ruby/object:Item
+    id: 4
+    barcode: 8076809545396
+    name: Pesti
+    quantity: 190.0
+    brand: Barilla
+    rating: 6
+    expiry_date: 2018-03-01
+    content_list:
+    - !ruby/object:Content
+      name: Sodium
+      quantity: 0.124
+    - !ruby/object:Content
+      name: Sugar
+      quantity: 0.05
+  5: !ruby/object:Item
+    id: 5
+    barcode: 8076809545396
+    name: Pizza Funghi
+    quantity: 365.0
+    brand: Ristorante
+    rating: 6
+    expiry_date: 2018-07-01
+    content_list:
+    - !ruby/object:Content
+      name: Sodium
+      quantity: 0.2
+    - !ruby/object:Content
+      name: Sugar
+      quantity: 0.1
+:item_id: 5
+:cycle: '7'
+:date: 2017-08-18
+:email: grmarks@gmail.com

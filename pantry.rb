@@ -4,6 +4,7 @@ require_relative 'inventory'
 require_relative 'supplier'
 require_relative 'menu'
 require_relative 'display'
+require_relative 'scanner'
 #require 'rubyserial'
 require 'date'
 require 'rubygems'
@@ -22,39 +23,19 @@ class Pantry
   FILE_NAME = 'system.yaml'
   FILE_BACK = 'system.back'
 
-  attr_accessor :cycle, :date, :email, :scanner, :mode
+  attr_reader :inventories, :suppliers, :master_items
+  attr_accessor :cycle, :date, :email, :scanner
 
   def initialize
     @inventories = {}
     @suppliers = {}
     @master_items = {}
     @cycle = 7
-    @email = ''
     @date = Date.today
-    @mode = 'out'
+    @email = ''
 
     @display = Display.new(self)
     @menu = Menu.new(self, @display)
-    #@serialport = Serial.new '/dev/ttyACM0', 19200, 8, :even
-    #@serialport = Serial.new '/dev/tty.GlennGS7e-BlueScanner'
-    @scanner = WebSocket::Client::Simple.connect 'ws://10.1.7.142:9999/' do |ws|
-      ws.on :open do
-        ws.send 'connected!'
-      end  
-    end
-
-    @scanner.on :message do |msg|
-      puts msg.data 
-    end
-
-    @scanner.on :close do |e|
-      p e
-      exit 1
-    end
-
-    @scanner.on :error do |e|
-      p e
-    end
 
     options = { 
             :address              => "smtp.gmail.com",
@@ -87,8 +68,8 @@ class Pantry
     end  
   end  
 
-  def add_inventory(inventory:)
-    @inventories.store(inventory.id, inventory)
+  def add_inventory(barcode:, inventory:)
+    @inventories.store(barcode, inventory)
   end
 
   def add_supplier(supplier:)
@@ -97,7 +78,6 @@ class Pantry
 
   def add_master_item(item:)
     @master_items.store(item.id, item)
-    @suppliers[item.supplier_id].add_sup_item(sup_item: Sup_item.new(item_id: item.id, price: item.price)) 
   end
 
   def remove_inventory(inventory:)
@@ -110,16 +90,29 @@ class Pantry
 
   def remove_master_item(item:)
     @master_items.delete(item.id)
-    @suppliers[item.supplier_id].remove_item(item)
   end  
 
   def shopping_list
-    @inventories.each do |key, value|
-      if value.quantity <= value.minimum_stock
-        add_to_list(value)
+    email_body =  ' Coles Shopping List\n'
+    email_body << ' ===================\n'
+    @inventories.each do |key, inventory|
+      if inventory.quantity <= inventory.minimum_stock
+        item = @master_items[inventory.item_id]
+        email_body << " #{inventory.reorder_qty} of #{item.name}/s made by #{item.brand}\n"
       end  
     end  
-    # email list
+
+    if email_body.length > 43
+      email_body << "\n End Of List\n"
+
+      # email list
+      Mail.deliver do
+      to       "#{@email},"
+      from     'grmarks@gmail.com'
+      subject  'Shopping List from G&S Dietry Pantry A.I.'
+      body     email_body
+    end  
+  end
 
   end
 
@@ -127,7 +120,6 @@ class Pantry
     if File.exists?(FILE_NAME)
       save = YAML.load(File.read(FILE_NAME))
       @inventories = save[:inv] if save[:inv]
-      Inventory.next = save[:inv_id] if save[:inv_id]
       @suppliers = save[:sup] if save[:sup]
       Supplier.next = save[:sup_id] if save[:sup_id]
       @master_items = save[:item] if save[:item]
@@ -141,7 +133,6 @@ class Pantry
   def save_system
     save = {
       inv: @inventories, 
-      inv_id: Inventory.next,
       sup: @suppliers, 
       sup_id: Supplier.next,
       item: @master_items, 
@@ -150,6 +141,7 @@ class Pantry
       date: @date,
       email: @email
     }
+
     File.rename(FILE_NAME, FILE_BACK) if File.exists?(FILE_NAME) 
     File.open(FILE_NAME, 'w') do |file| 
       file.write(YAML.dump(save)) 
@@ -161,6 +153,7 @@ class Pantry
     @menu.email
     @menu.shopping_cycle
     supplier_download
+    @menu.scan_mode(mode: 'IN') 
   end
 
   def supplier_download
@@ -175,45 +168,92 @@ class Pantry
     contents = []
     contents << Content.new(name: 'Sodium', quantity: 0.1)
     contents << Content.new(name: 'Sugar', quantity: 0.1)
-    item = Item.new(barcode: 9112345678901, name: 'Cambels Soup', quantity: 500, brand: 'Cambels', rating: 7,
-                    expiry_date: '2018-05-01', supplier_id: supplier.id, content_list: contents)
+
+    item = Item.new(
+      barcode: 9112345678901, 
+      name: 'Cambels Soup', 
+      quantity: 500, 
+      brand: 'Cambels', 
+      rating: 7,
+      expiry_date: Date.parse('2018-05-01'), 
+      content_list: contents
+    )
+
     add_master_item(item: item)
-    inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 2)
-    add_inventory(inventory: inventory)
-    item = Item.new(barcode: 9112345678992, name: 'Rice', quantity: 1000, brand: 'Sunlong', rating: 8,
-                    expiry_date: '2018-09-01', supplier_id: supplier.id, content_list: contents)
+    supplier.add_item(item_id: item.id, price: 7.50)
+    supplier2.add_item(item_id: item.id, price: 8.50)
+    inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 2, reorder_qty: 4, consumption: 1)
+    add_inventory(barcode: item.barcode, inventory: inventory)
+
+    item = Item.new(
+      barcode: 9112345678992, 
+      name: 'Rice', 
+      quantity: 1000, 
+      brand: 'Sunlong', 
+      rating: 8,          
+      expiry_date: Date.parse('2018-01-01'), 
+      content_list: contents
+    )
+
     add_master_item(item: item)
-    inventory = Inventory.new(item_id: item.id, quantity: 2, minimum_stock: 1)
-    add_inventory(inventory: inventory)
+    supplier.add_item(item_id: item.id, price: 5.40)
+    inventory = Inventory.new(item_id: item.id, quantity: 2, minimum_stock: 1, reorder_qty: 1, consumption: 1)
+    add_inventory(barcode: item.barcode, inventory: inventory)
+
     contents << Content.new(name: 'Gluten', quantity: 0.1)
-    item = Item.new(barcode: 9112345678883, name: 'Wholemeal Flour', quantity: 1000, brand: 'Sunlong', rating: 8,
-                    expiry_date: '2018-11-01', supplier_id: supplier.id, content_list: contents)
+
+    item = Item.new(
+      barcode: 9112345678883, 
+      name: 'Wholemeal Flour', 
+      quantity: 1000, 
+      brand: 'Sunlong', 
+      rating: 8,
+      expiry_date: Date.parse('2018-11-01'),
+      content_list: contents
+    )
+
     add_master_item(item: item)
-    inventory = Inventory.new(item_id: item.id, quantity: 2, minimum_stock: 1)
-    add_inventory(inventory: inventory)
+    supplier.add_item(item_id: item.id, price: 6.30)
+    inventory = Inventory.new(item_id: item.id, quantity: 2, minimum_stock: 1, reorder_qty: 1, consumption: 1)
+    add_inventory(barcode: item.barcode, inventory: inventory)
 
     contents = []
     contents << Content.new(name: 'Sodium', quantity: 0.124)
     contents << Content.new(name: 'Sugar', quantity: 0.05)
-    item = Item.new(barcode: 8076809545396, name: 'Pesti', quantity: 190, brand: 'Barilla', rating: 6,
-                    expiry_date: '2018-05-01', supplier_id: supplier.id, content_list: contents)
+
+    item = Item.new(
+      barcode: 8076809545396, 
+      name: 'Pesti', 
+      quantity: 190, 
+      brand: 'Barilla', 
+      rating: 6,
+      expiry_date: Date.parse('2018-03-01'), 
+      content_list: contents
+    )
+
     add_master_item(item: item)
-    inventory = Inventory.new(item_id: item.id, quantity: 3, minimum_stock: 1)
-    add_inventory(inventory: inventory)
+    supplier.add_item(item_id: item.id, price: 3.50)
+    inventory = Inventory.new(item_id: item.id, quantity: 3, minimum_stock: 1, reorder_qty: 2, consumption: 1)
+    add_inventory(barcode: item.barcode, inventory: inventory)
 
     contents = []
     contents << Content.new(name: 'Sodium', quantity: 0.2)
     contents << Content.new(name: 'Sugar', quantity: 0.1)
-    item = Item.new(barcode: 8076809545396, name: 'Pizza Funghi', quantity: 365, brand: 'Ristorante', rating: 6,
-                    expiry_date: '2018-02-01', supplier_id: supplier.id, content_list: contents)
+
+    item = Item.new(
+      barcode: 8076809545396, 
+      name: 'Pizza Funghi', 
+      quantity: 3, 
+      brand: 'Ristorante', 
+      rating: 6,
+      expiry_date: Date.parse('2018-07-01'), 
+      content_list: contents
+    )
+
     add_master_item(item: item)
-    inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 2)
-    add_inventory(inventory: inventory)
+    supplier.add_item(item_id: item.id, price: 7.20)
+    inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 1, reorder_qty: 2, consumption: 1)
+    add_inventory(barcode: item.barcode, inventory: inventory)
   end
 
-  private
-
-    def add_to_list(inventory)
-
-    end  
 end
