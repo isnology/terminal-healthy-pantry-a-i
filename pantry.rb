@@ -95,7 +95,7 @@ class Pantry
     email_body =  " Coles Shopping List\r\n"
     email_body << " ===================\r\n\r\n"
     @inventories.each do |key, inventory|
-      if inventory.quantity <= inventory.minimum_stock
+      if inventory.quantity <= inventory.minimum_stock && inventory.reorder_qty > 0
         item = @master_items[inventory.item_id]
         email_body << " #{inventory.reorder_qty} of #{item.name}/s made by #{item.brand}\r\n"
       end  
@@ -181,7 +181,7 @@ class Pantry
 
     add_master_item(item: item)
     supplier.add_item(item_id: item.id, price: 7.50)
-    inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 2, reorder_qty: 4, consumption: 1)
+    inventory = Inventory.new(item_id: item.id, quantity: 4.0, minimum_stock: 2.0, reorder_qty: 4, consumption: 1.0)
     add_inventory(barcode: item.barcode, inventory: inventory)
 
     item = Item.new(
@@ -197,7 +197,7 @@ class Pantry
     add_master_item(item: item)
     supplier.add_item(item_id: item.id, price: 5.40)
     supplier2.add_item(item_id: item.id, price: 8.50)
-    inventory = Inventory.new(item_id: item.id, quantity: 2, minimum_stock: 1, reorder_qty: 1, consumption: 1)
+    inventory = Inventory.new(item_id: item.id, quantity: 2.0, minimum_stock: 1.0, reorder_qty: 1, consumption: 1.0)
     add_inventory(barcode: item.barcode, inventory: inventory)
 
     contents << Content.new(name: 'Gluten', quantity: 0.1)
@@ -214,7 +214,7 @@ class Pantry
 
     add_master_item(item: item)
     supplier.add_item(item_id: item.id, price: 6.30)
-    inventory = Inventory.new(item_id: item.id, quantity: 2, minimum_stock: 1, reorder_qty: 1, consumption: 1)
+    inventory = Inventory.new(item_id: item.id, quantity: 2.0, minimum_stock: 1.0, reorder_qty: 1, consumption: 1.0)
     add_inventory(barcode: item.barcode, inventory: inventory)
 
     contents = []
@@ -233,7 +233,7 @@ class Pantry
 
     add_master_item(item: item)
     supplier.add_item(item_id: item.id, price: 3.50)
-    inventory = Inventory.new(item_id: item.id, quantity: 3, minimum_stock: 1, reorder_qty: 2, consumption: 1)
+    inventory = Inventory.new(item_id: item.id, quantity: 3.0, minimum_stock: 1.0, reorder_qty: 2, consumption: 1.0)
     add_inventory(barcode: item.barcode, inventory: inventory)
 
     contents = []

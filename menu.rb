@@ -77,12 +77,12 @@ class Menu
       inventory.quantity += 1
 
       item = @pantry.master_items[inventory.item_id]
-      puts "#{barcode} item: #{item.name} qty: #{inventory.quantity}"  
+      puts "#{barcode} item: #{item.name} qty: #{inventory.quantity} increase"  
     else  
       # create inventory record
       @pantry.master_items.each do |key, item|
         if item.barcode == n_barcode
-          inventory = Inventory.new(item_id: item.id, quantity: 1, minimum_stock: 1, reorder_qty: 2, consumption: 1)
+          inventory = Inventory.new(item_id: item.id, quantity: 1.0, minimum_stock: 1.0, reorder_qty: 2, consumption: 1.0)
           @pantry.add_inventory(barcode: n_barcode, inventory: inventory)
           puts "add #{barcode} item: #{item.name} qty: #{inventory.quantity} to inventory"  
           break
@@ -95,9 +95,9 @@ class Menu
   def scanned_out(barcode:)
     inventory = @pantry.inventories[barcode.to_i]
     inventory.quantity -= inventory.consumption
-    inventory.quantity = 0 if inventory.quantity < 0
+    inventory.quantity = 0.0 if inventory.quantity < 0.0
 
     item = @pantry.master_items[inventory.item_id]
-    puts "#{barcode} item: #{item.name} qty: #{inventory.quantity}"
+    puts "#{barcode} item: #{item.name} qty: #{inventory.quantity} decrease (unless 0.0)"
   end
 end  
