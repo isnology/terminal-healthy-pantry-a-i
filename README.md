@@ -18,10 +18,10 @@ Not written but propossed is a system that would auto generate a shopping list o
 
 ## Gems used
 
-  curses
-  rubygems
-  websocket-client-simple
-  mail
+  - curses
+  - rubygems
+  - websocket-client-simple
+  - mail
 
 ### General
 
