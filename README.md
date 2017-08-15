@@ -2,7 +2,7 @@
 
  By Shaun Soo and Glenn Marks
 
-## Breif
+## Brief
 
  Build a treminal based app in ruby of our choosing using at least 2 gems and 3 classes
 
