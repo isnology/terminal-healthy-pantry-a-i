@@ -1,26 +1,4 @@
-require_relative 'content'
-require_relative 'item'
-require_relative 'inventory'
-require_relative 'supplier'
-require_relative 'menu'
-require_relative 'display'
-require_relative 'scanner'
-require 'date'
-require 'rubygems'
-require 'websocket-client-simple'
-require 'mail'
-require 'yaml'
-require 'curses'
-#require 'espeak'
-require 'irb'
-
-include Curses
-#include ESpeak
-
 class Pantry
-
-  FILE_NAME = 'system.yaml'
-  FILE_BACK = 'system.back'
 
   attr_reader :inventories, :suppliers, :master_items
   attr_accessor :cycle, :date, :email, :scanner
@@ -29,43 +7,11 @@ class Pantry
     @inventories = {}
     @suppliers = {}
     @master_items = {}
+    @history = []
     @cycle = 7
     @date = Date.today
     @email = ''
-
-    @display = Display.new(self)
-    @menu = Menu.new(self, @display)
-
-    options = { 
-            :address              => "smtp.gmail.com",
-            :port                 => 587,
-            :domain               => 'localhost',
-            :user_name            => 'grmarks',
-            :password             => ENV['EMAIL_PASSWORD'],
-            :authentication       => 'plain',
-            :enable_starttls_auto => true  }
-
-    Mail.defaults do
-      delivery_method :smtp, options
-    end
-  end  
-
-  def run
-    begin
-      load_system
-      Curses.init_screen
-      if !File.exists?(FILE_NAME)
-        @display.splash_screen 
-        on_startup
-      else
-        @display.splash_screen  
-      end  
-      @menu.main_menu
-    ensure  
-      Curses.close_screen
-      save_system
-    end  
-  end  
+  end
 
   def add_inventory(barcode:, inventory:)
     @inventories.store(barcode, inventory)
@@ -81,79 +27,122 @@ class Pantry
 
   def remove_inventory(inventory:)
     @inventories.delete(inventory.id)
-  end  
+  end
 
   def remove_supplier(supplier:)
     @suppliers.delete(supplier.id)
-  end  
+  end
 
   def remove_master_item(item:)
     @master_items.delete(item.id)
-  end  
-
-  def shopping_list
-    email_body =  " Coles Shopping List\r\n"
-    email_body << " ===================\r\n\r\n"
-    @inventories.each do |key, inventory|
-      if inventory.quantity <= inventory.minimum_stock && inventory.reorder_qty > 0
-        item = @master_items[inventory.item_id]
-        email_body << " #{inventory.reorder_qty} of #{item.name}/s made by #{item.brand}\r\n"
-      end  
-    end  
-
-    if email_body.length > 43
-      email_body << "\r\n End Of List\r\n"
-
-      # email list
-      email = @email
-      Mail.deliver do
-      to       "#{email},"
-      from     'grmarks@gmail.com'
-      subject  'Shopping List from G&S Dietry Pantry A.I.'
-      body     email_body
-    end  
   end
 
+  def reduce_inventory(barcode:)
+    if inventory = inventories[barcode]
+      inventory.decrease
+    end
+  end
+
+  def increase_inventory(barcode:)
+    if inventory = inventories[barcode]
+      inventory.increase
+    end
+  end
+
+  def inventory_reorder
+    inventories = []
+    @inventories.each do |key, inventory|
+      if inventory.reorder?
+        inventories << inventory
+      end
+    end
+    inventories
+  end
+
+  def shopping_list(inventories:, type: nil)
+    shopping_list = [" Shopping List"]
+    shopping_list <<  " =============================\r\n"
+
+    inventories.each do |inventory|
+      item = @master_items[inventory.item_id]
+      shopping_list << " #{type ? 1 : inventory.reorder_qty} of #{item.name} made by #{item.brand}"
+    end
+
+    shopping_list << "\r\n End Of List"
+  end
+
+  def adjust_reorder(inventories:, type:)
+    inv_hist = {}
+    count = {}
+    @history.each do |hist|
+      if count.key?(hist.item_id)
+        count[hist.item_id] += 1
+      else
+        count[hist.item_id] = 1
+      end
+    end
+    inventories.each do |inventory|
+      if type == SCHEDULED
+        if count[inventory.item_id] < 2
+          if inventory.minimum_stock > 0
+            inventory.minimum_stock -= 1;
+          else
+            inventory.reorder_qty -= 1 if inventory.reorder_qty > 1
+          end
+        elsif count[inventory.item_id] > 2
+          if inventory.minimum_stock < 2
+            inventory.minimum_stock += 1
+          else
+            inventory.reorder_qty += 1
+          end
+        end
+      end
+      inv_hist[Date.today].store(inventory.item_id, inventory)
+    end
+    reorder_history(inventories: inv_hist)
+  end
+
+  def reorder_history(inventories:)
+    @history << inventories
+    date = Date.today - (@cycle * 2)
+    while @history.first[date] < date
+      @history.shift
+    end
   end
 
   def load_system
-    if File.exists?(FILE_NAME)
-      save = YAML.load(File.read(FILE_NAME))
+    if File.exists?(Constants::FILE_NAME)
+      save = YAML.load(File.read(Constants::FILE_NAME))
       @inventories = save[:inv] if save.key?(:inv)
       @suppliers = save[:sup] if save.key?(:sup)
       Supplier.next = save[:sup_id] if save.key?(:sup_id)
       @master_items = save[:item] if save.key?(:item)
       Item.next = save[:item_id] if save.key?(:item_id)
+      @history = save[:history] if save.key?(:history)
       @cycle = save[:cycle] if save.key?(:cycle)
       @date = save[:date] if save.key?(:date)
       @email = save[:email] if save.key?(:email)
-    end  
+    end
   end
   
   def save_system
     save = {
-      inv: @inventories, 
-      sup: @suppliers, 
+      inv: @inventories,
+      sup: @suppliers,
       sup_id: Supplier.next,
-      item: @master_items, 
+      item: @master_items,
       item_id: Item.next,
-      cycle: @cycle, 
+      history: @history,
+      cycle: @cycle,
       date: @date,
       email: @email
     }
 
-    File.rename(FILE_NAME, FILE_BACK) if File.exists?(FILE_NAME) 
-    File.open(FILE_NAME, 'w') do |file| 
-      file.write(YAML.dump(save)) 
-    end 
-    File.delete(FILE_BACK) if File.exists?(FILE_BACK) 
-  end  
-
-  def on_startup
-    @menu.email
-    @menu.shopping_cycle
-    supplier_download
-    @menu.scan_mode(mode: 'IN') 
+    File.rename(Constants::FILE_NAME, Constants::FILE_BACK) if File.exists?(Constants::FILE_NAME)
+    File.open(Constants::FILE_NAME, 'w') do |file|
+      file.write(YAML.dump(save))
+    end
+    File.delete(Constants::FILE_BACK) if File.exists?(Constants::FILE_BACK)
   end
 
   def supplier_download
@@ -170,12 +159,12 @@ class Pantry
     contents << Content.new(name: 'Sugar', quantity: 0.1)
 
     item = Item.new(
-      barcode: 9112345678901, 
-      name: 'Cambels Soup', 
-      quantity: 500, 
-      brand: 'Cambels', 
+      barcode: 9112345678901,
+      name: 'Cambels Soup',
+      quantity: 500,
+      brand: 'Cambels',
       rating: 7,
-      expiry_date: Date.parse('2018-05-01'), 
+      expiry_date: Date.parse('2018-05-01'),
       content_list: contents
     )
 
@@ -185,12 +174,12 @@ class Pantry
     add_inventory(barcode: item.barcode, inventory: inventory)
 
     item = Item.new(
-      barcode: 9112345678992, 
-      name: 'Rice', 
-      quantity: 1000, 
-      brand: 'Sunlong', 
-      rating: 8,          
-      expiry_date: Date.parse('2018-01-01'), 
+      barcode: 9112345678992,
+      name: 'Rice',
+      quantity: 1000,
+      brand: 'Sunlong',
+      rating: 8,
+      expiry_date: Date.parse('2018-01-01'),
       content_list: contents
     )
 
@@ -203,10 +192,10 @@ class Pantry
     contents << Content.new(name: 'Gluten', quantity: 0.1)
 
     item = Item.new(
-      barcode: 9112345678883, 
-      name: 'Wholemeal Flour', 
-      quantity: 1000, 
-      brand: 'Sunlong', 
+      barcode: 9112345678883,
+      name: 'Wholemeal Flour',
+      quantity: 1000,
+      brand: 'Sunlong',
       rating: 8,
       expiry_date: Date.parse('2018-11-01'),
       content_list: contents
@@ -222,12 +211,12 @@ class Pantry
     contents << Content.new(name: 'Sugar', quantity: 0.05)
 
     item = Item.new(
-      barcode: 8076809545396, 
-      name: 'Pesti', 
-      quantity: 190, 
-      brand: 'Barilla', 
+      barcode: 8076809545396,
+      name: 'Pesti',
+      quantity: 190,
+      brand: 'Barilla',
       rating: 6,
-      expiry_date: Date.parse('2018-03-01'), 
+      expiry_date: Date.parse('2018-03-01'),
       content_list: contents
     )
 
@@ -241,12 +230,12 @@ class Pantry
     contents << Content.new(name: 'Sugar', quantity: 0.1)
 
     item = Item.new(
-      barcode: 4001724819103, 
-      name: 'Pizza Funghi', 
-      quantity: 3, 
-      brand: 'Ristorante', 
+      barcode: 4001724819103,
+      name: 'Pizza Funghi',
+      quantity: 3,
+      brand: 'Ristorante',
       rating: 6,
-      expiry_date: Date.parse('2018-07-01'), 
+      expiry_date: Date.parse('2018-07-01'),
       content_list: contents
     )
 
@@ -255,5 +244,4 @@ class Pantry
     #inventory = Inventory.new(item_id: item.id, quantity: 4, minimum_stock: 1, reorder_qty: 2, consumption: 1)
     #add_inventory(barcode: item.barcode, inventory: inventory)
   end
-
 end

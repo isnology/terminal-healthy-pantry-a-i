@@ -11,4 +11,19 @@ class Inventory
     @consumption = consumption.to_f
   end
 
+  def reorder?
+    # reorder quanty = to 0 means ignore this item
+    self.quantity <= self.minimum_stock && self.reorder_qty > 0
+  end
+
+  def increase(quantity: 1.0)
+    self.quantity += quantity.to_f
+    self
+  end
+
+  def decrease(quantity: 1.0)
+    self.quantity -= self.consumption * quantity.to_f
+    self.quantity = 0.0 if self.quantity < 0.0
+    self
+  end
 end

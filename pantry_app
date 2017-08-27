@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
 
-require_relative 'pantry'
+require_relative 'menu'
 
-Pantry.new.run
+Menu.new.run

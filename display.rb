@@ -1,8 +1,7 @@
 
 class Display
 
-  def initialize(pantry)
-    @pantry = pantry
+  def initialize
     Curses.start_color
     # Determines the colors in the attron() in put_str()
     Curses.init_pair(COLOR_BLUE,COLOR_BLUE,COLOR_BLACK) 
