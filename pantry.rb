@@ -70,7 +70,7 @@ class Pantry
 
     shopping_list << "\r\n End Of List"
   end
-
+  
   def adjust_reorder(inventories:, type:)
     inv_hist = {}
     count = {}
@@ -81,6 +81,7 @@ class Pantry
         count[hist.item_id] = 1
       end
     end
+    
     inventories.each do |inventory|
       if type == SCHEDULED
         if count[inventory.item_id] < 2
